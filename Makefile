@@ -82,9 +82,14 @@ OBJ_FILES := \
 VPATH := $(dir $(SRC_FILES))
 
 # --- KEY GENERATION TARGET ---
-# Runs binary.py to (re)generate public_key.h from BASE64_KEY or the default.
-generate_key: $(GENERATED_KEY_HEADER)
+# `generate_key` is phony so it ALWAYS re-runs binary.py, even when
+# public_key.h already exists on disk (e.g. when a new BASE64_KEY is given).
+generate_key:
+	@echo "Generating $(GENERATED_KEY_HEADER)..."
+	@python3 binary.py $(if $(BASE64_KEY),$(BASE64_KEY),)
 
+# Used by the build dependency path: only generates the header when it is
+# missing, avoiding unnecessary rebuilds during a normal `make build`.
 $(GENERATED_KEY_HEADER):
 	@echo "Generating $(GENERATED_KEY_HEADER)..."
 	@python3 binary.py $(if $(BASE64_KEY),$(BASE64_KEY),)
@@ -109,7 +114,11 @@ build: $(OBJ_FILES)
 	@echo "Build Complete."
 
 # --- UF2 TARGET ---
-openhaystack: build
+# Regenerates the key header first, then builds and converts to UF2.
+# Pass BASE64_KEY=<key> to use a custom key, otherwise the default is used.
+openhaystack:
+	@$(MAKE) generate_key $(if $(BASE64_KEY),BASE64_KEY=$(BASE64_KEY),)
+	@$(MAKE) build
 	@echo "Converting app.hex to UF2..."
 	@python3 uf2conv.py -c -f 0xADA52840 $(OUTPUT_DIR)/app.hex -o flash.uf2
 	@echo "DONE! Copy 'flash.uf2' to your drive."

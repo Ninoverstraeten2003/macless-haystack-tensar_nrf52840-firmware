@@ -19,9 +19,6 @@ Reverse Leakage Source: https://github.com/joric/nrfmicro/wiki/ALternatives
 ```bash
 # Generate 1 key (output in keygen/output/)
 python3 keygen/keys.py
-
-# Generate multiple keys (requires anti-stalking acknowledgement)
-python3 keygen/keys.py -n 3 -tinfs i_agree
 ```
 
 The advertisement key (`adv_b64`) is printed at the end:
