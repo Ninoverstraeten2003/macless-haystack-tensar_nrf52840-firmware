@@ -11,4 +11,4 @@ compile_commands.json
 public_key.h
 flash.uf2
 
-output
+output*

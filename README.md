@@ -1,30 +1,93 @@
-# MaclessHaystack Firmware for Tensar nRF52840 Clone
+# MaclessHaystack nRF52840 — CR2477 Beacon
 
-TENSTAR 2pcs NRF52840 Development Board Compatible With Nice!Nano V2.0 Bluetooth Split Keyboard Pro Micro Red Board: https://nl.aliexpress.com/item/1005009890279520.html
+Apple FindMy beacon firmware for the TENSTAR ProMicro nRF52840 (nice!nano v2 clone), powered by a CR2477 coin cell.
 
-Using:
-- Adafruit_nRF52_Bootloader 0.9.2 with S140 v6.1.1 : https://github.com/adafruit/Adafruit_nRF52_Bootloader/releases/tag/0.9.2
-- Nordic SDK 15.3.0
-- Battery: CR2477 (non rechargeable)
+**Board:** [TENSTAR NRF52840 ProMicro (AliExpress)](https://nl.aliexpress.com/item/1005009890279520.html)
 
-| Component | Marking | Current Draw | Fix Priority |
-| :--- | :--- | :--- | :--- |
-| Silicon diode | W5 | ~60 µA | ⚠️ CRITICAL |
-| Blue Power LED | | 1–2 mA | Remove physically or cut PCB trace |
+## Stack
 
-Reverse Leakage Source: https://github.com/joric/nrfmicro/wiki/ALternatives
+| Component | Version |
+|---|---|
+| Bootloader | Adafruit nRF52 Bootloader 0.9.2 (stock 0.6.0 also works) |
+| SoftDevice | S140 v6.1.1 |
+| SDK | Nordic SDK 15.3.0 |
+| Battery | CR2477 (1000 mAh, non-rechargeable) |
 
-## Generate keys
+## Firmware Power Profile
+
+| Feature | Setting | Impact |
+|---|---|---|
+| Advertising interval | 2000 ms | ~5 µA avg BLE current |
+| TX power | 0 dBm | 4.8 mA peak, ~60m range |
+| DC/DC REG1 (VDD → 1.1V core) | Enabled | Saves ~20-30% vs nRF52840's own internal LDO |
+| Debug LEDs | Disabled | Zero LED drain |
+| Unused GPIOs | Disconnected (24 pins) | Prevents leakage |
+| Peripherals (UART, SPI, I2C) | All disabled | Zero overhead |
+| Logging | Disabled | Zero overhead |
+| Battery monitoring | Weekly (SAADC single-shot) | Negligible |
+| Advertising type | Non-connectable, non-scannable | No connection overhead |
+
+## ⚠️ Board Modifications (TENSTAR "Bad Batch")
+
+Some TENSTAR boards ship with a **W5 silicon diode** that has ~60 µA reverse leakage — this single component kills 80% of battery life.
+
+Reference: [joric/nrfmicro — Alternatives](https://github.com/joric/nrfmicro/wiki/ALternatives)
+
+### Board Components
+
+| Component | Marking | Type | Current Draw | Action |
+|---|---|---|---|---|
+| **Silicon diode** | W5 | SOD-323 | **~60 µA** reverse leakage | 🔴 Remove & bridge pads |
+| **Battery charger IC** | LTH7R | SOT-23-5 | ~3 µA quiescent | 🟡 Remove (CR2477 is non-rechargeable) |
+| **LDO regulator** | A5X2Q (ME6217C33M5G) | SOT-23-5 | ~5 µA quiescent | 🟠 Keep (needed for USB-C flashing) |
+| **RTC crystal** | DA538C | 32.768 kHz | ~0.25 µA | 🟢 Optional: use internal RC instead |
+| **BLE crystal** | 32.000 MHz | Metal can | Required | ✅ Keep |
+| **Unknown IC** | A19T | SOT-23 | Unknown | ❓ Needs identification |
+
+### Power Path
+
+```
+MAIN PATH:
+USB VBUS --> [W5 diode 60uA leak!] --> RAW --> [LDO 5uA] --> VCC (=VDD rail) --> nRF52840
+                                                                    ^
+                                                                    |
+                                                              CR2477 (+) here
+
+SIDE BRANCH (off RAW):
+RAW --> [LTH7R 3uA] --> B+/B- pads (LiPo, not used)
+```
+
+- **CR2477 (3.0V) cannot drive the LDO** (needs ≥3.4V input) → power via VCC pin directly
+- **Removing W5 without bridging** breaks USB-C power but also eliminates 60 µA leakage
+- **Bridging W5 pads** restores USB-C AND eliminates 60 µA leakage
+- **LTH7R is not in the main path** — removing it breaks nothing, saves 3 µA
+- **Always remove CR2477 before plugging USB-C** (no charger = backfeed risk)
+
+### Battery Life by Configuration
+
+| Configuration | Modification | Total µA | CR2477 Life | USB-C? |
+|---|---|---|---|---|
+| Stock (no mods) | — | 76 µA | ❌ ~14 months | ✅ |
+| **W5 bridged** | Remove diode, solder bridge | 16 µA | ✅ ~5 years | ✅ |
+| **W5 bridged + no LTH7R** | + remove charger IC | 13 µA | ✅ ~6 years | ✅ |
+| W5 removed + no LTH7R + no LDO | + remove LDO (all 3 ICs gone) | 8 µA | ✅ ~7-8 years | ❌ |
+
+> Battery life includes ~3%/year CR2477 self-discharge. Conservative estimates.
+
+### Recommended Modification (Keeps USB-C)
+
+1. **Remove W5 diode, bridge the pads** — biggest impact (−60 µA)
+2. **Remove LTH7R charger IC** — prevents accidental CR2477 charging (−3 µA)
+3. **Keep LDO in place** — preserves USB-C power for flashing
+4. **Wire CR2477 (+) → VCC pin, (−) → GND** — bypasses LDO on battery
+
+## Generate Keys
 
 ```bash
-# Generate 1 key (output in keygen/output/)
 python3 keygen/keys.py
 ```
 
-The advertisement key (`adv_b64`) is printed at the end:
-```
-→ Pass to firmware: make BASE64_KEY=<adv_b64> openhaystack
-```
+The advertisement key (`adv_b64`) is printed at the end.
 
 ## Build
 
@@ -35,11 +98,12 @@ make BASE64_KEY=<adv_b64> openhaystack
 
 ## Flash
 
+Short the reset pin to ground by a quick tap to enter bootloader, then:
+
 ```bash
 cp -X flash.uf2 /Volumes/NICENANO/
 ```
 
 ## Frontend
+
 https://myfindr2.ninoverstraeten.com
-
-
