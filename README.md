@@ -47,14 +47,22 @@ Reference: [joric/nrfmicro — Alternatives](https://github.com/joric/nrfmicro/w
 ### Power Path
 
 ```
-MAIN PATH:
-USB VBUS --> [W5 diode 60uA leak!] --> RAW --> [LDO 5uA] --> VCC (=VDD rail) --> nRF52840
-                                                                    ^
-                                                                    |
-                                                              CR2477 (+) here
-
-SIDE BRANCH (off RAW):
-RAW --> [LTH7R 3uA] --> B+/B- pads (LiPo, not used)
+                         MAIN POWER PATH
+                         ===============
+USB VBUS --> [W5 diode] --> RAW pin --> [LDO] --> VCC pin (= VDD rail) --> nRF52840
+              60uA leak!       |        5uA               ^
+                               |      quiescent            |
+                               |                     CR2477 connects here
+                               |                     (bypasses LDO)
+                               |
+                         SIDE BRANCH
+                         -----------
+                               |
+                               +--> [LTH7R VIN]
+                                       |  3uA quiescent
+                                  [LTH7R VBAT]
+                                       |
+                                  B+/B- pads (LiPo, not used)
 ```
 
 - **CR2477 (3.0V) cannot drive the LDO** (needs ≥3.4V input) → power via VCC pin directly
