@@ -11,12 +11,15 @@
 #define STATUS_FLAG_FULL_BATTERY            0x00   /* 0b00000000 - 00 */
 
 /* Battery voltage thresholds (millivolts).
- * Tune for your power path:
- *   CR2477 direct:      3000mV fresh → 2000mV dead
- *   LiPo + LDO (3.3V): VDD = 3300mV until LiPo ≈ 3.5V, then drops */
-#define BATTERY_THRESHOLD_FULL_MV       2800
-#define BATTERY_THRESHOLD_MEDIUM_MV     2500
-#define BATTERY_THRESHOLD_LOW_MV        2200
+ * Tuned for CR2477 direct to VDD (no LDO).
+ *
+ * CR2477 discharge curve at low current:
+ *   3.0V plateau (years) → 2.9V knee → 2.7V decline → 2.0V dead
+ *
+ * Earlier thresholds give more warning time before the steep drop. */
+#define BATTERY_THRESHOLD_FULL_MV       2900
+#define BATTERY_THRESHOLD_MEDIUM_MV     2700
+#define BATTERY_THRESHOLD_LOW_MV        2500
 
 /**
  * @brief Measure VDD via SAADC and encode battery level
