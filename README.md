@@ -49,11 +49,9 @@ Reference: [joric/nrfmicro — Alternatives](https://github.com/joric/nrfmicro/w
 ```
                          MAIN POWER PATH
                          ===============
-USB VBUS --> [W5 diode] --> RAW pin --> [LDO] --> VCC pin (= VDD rail) --> nRF52840
-              60uA leak!       |        5uA               ^
-                               |      quiescent            |
-                               |                     CR2477 connects here
-                               |                     (bypasses LDO)
+USB VBUS --> [W5 diode] --> RAW pin --> [LDO] --> VCC pin (LDO output) --> nRF52840
+              60uA leak!       |        5uA
+                               |      quiescent
                                |
                          SIDE BRANCH
                          -----------
@@ -63,9 +61,17 @@ USB VBUS --> [W5 diode] --> RAW pin --> [LDO] --> VCC pin (= VDD rail) --> nRF52
                                   [LTH7R VBAT]
                                        |
                                   B+/B- pads (LiPo, not used)
+
+                         CORRECT BATTERY PATH
+                         ====================
+CR2477 (+) --> VDD pad --> nRF52840 (bypasses LDO entirely)
+CR2477 (-) --> GND
 ```
 
-- **CR2477 (3.0V) cannot drive the LDO** (needs ≥3.4V input) → power via VCC pin (VCC on that board is output, VDD better, testing now) directly
+> [!CAUTION]
+> **Do NOT wire CR2477 to the VCC pin.** VCC is the LDO *output* — the internal switch chokes current during the BLE radio's 4.8 mA spike, causing the voltage to drop below 1.7 V. The nRF52840's brownout-reset fires, the CPU immediately reboots, and the loop repeats thousands of times per hour. This drains a 1000 mAh CR2477 in ~48 hours.
+
+- **CR2477 (3.0V) cannot drive the LDO** (needs ≥3.4V input) → wire directly to the **VDD pad**, bypassing the LDO entirely
 - **Removing W5 without bridging** breaks USB-C power but also eliminates 60 µA leakage
 - **Bridging W5 pads** restores USB-C AND eliminates 60 µA leakage
 - **LTH7R is not in the main path** — removing it breaks nothing, saves 3 µA
@@ -87,7 +93,10 @@ USB VBUS --> [W5 diode] --> RAW pin --> [LDO] --> VCC pin (= VDD rail) --> nRF52
 1. **Remove W5 diode, bridge the pads** — biggest impact (−60 µA)
 2. **Remove LTH7R charger IC** — prevents accidental CR2477 charging (−3 µA)
 3. **Keep LDO in place** — preserves USB-C power for flashing
-4. **Wire CR2477 (+) → VCC pin (VDD may be better cause VCC is output only normally, testing now), (−) → GND** — bypasses LDO on battery
+4. **Wire CR2477 (+) → VDD pad, (−) → GND** — bypasses LDO, feeds the nRF52840 rail directly
+
+> [!WARNING]
+> **VCC ≠ VDD on this board.** VCC is the LDO output (a choked, regulated rail). VDD is the direct supply rail to the nRF52840. Wiring to VCC caused a brownout-reset loop and drained a full CR2477 in 2 days.
 
 ## Generate Keys
 
