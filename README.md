@@ -65,7 +65,7 @@ USB VBUS --> [W5 diode] --> RAW pin --> [LDO] --> VCC pin (= VDD rail) --> nRF52
                                   B+/B- pads (LiPo, not used)
 ```
 
-- **CR2477 (3.0V) cannot drive the LDO** (needs ≥3.4V input) → power via VCC pin directly
+- **CR2477 (3.0V) cannot drive the LDO** (needs ≥3.4V input) → power via VCC pin (VCC on that board is output, VDD better, testing now) directly
 - **Removing W5 without bridging** breaks USB-C power but also eliminates 60 µA leakage
 - **Bridging W5 pads** restores USB-C AND eliminates 60 µA leakage
 - **LTH7R is not in the main path** — removing it breaks nothing, saves 3 µA
@@ -87,7 +87,7 @@ USB VBUS --> [W5 diode] --> RAW pin --> [LDO] --> VCC pin (= VDD rail) --> nRF52
 1. **Remove W5 diode, bridge the pads** — biggest impact (−60 µA)
 2. **Remove LTH7R charger IC** — prevents accidental CR2477 charging (−3 µA)
 3. **Keep LDO in place** — preserves USB-C power for flashing
-4. **Wire CR2477 (+) → VCC pin, (−) → GND** — bypasses LDO on battery
+4. **Wire CR2477 (+) → VCC pin (VDD may be better cause VCC is output only normally, testing now), (−) → GND** — bypasses LDO on battery
 
 ## Generate Keys
 
