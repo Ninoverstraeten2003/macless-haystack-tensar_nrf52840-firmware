@@ -24,7 +24,32 @@ __isr_vector:
     .long   0                     /* Reserved */
     .long   Default_Handler       /* PendSV */
     .long   Default_Handler       /* SysTick */
-    .rept   48                    /* External IRQs */
+
+    /* External IRQs */
+    .long   Default_Handler       /* 0: POWER_CLOCK */
+    .long   Default_Handler       /* 1: RADIO */
+    .long   Default_Handler       /* 2: UARTE0_UART0 */
+    .long   Default_Handler       /* 3: SPIM0_SPIS0_TWIM0_TWIS0_SPI0_TWI0 */
+    .long   Default_Handler       /* 4: SPIM1_SPIS1_TWIM1_TWIS1_SPI1_TWI1 */
+    .long   Default_Handler       /* 5: NFCT */
+    .long   Default_Handler       /* 6: GPIOTE */
+    .long   Default_Handler       /* 7: SAADC */
+    .long   Default_Handler       /* 8: TIMER0 */
+    .long   Default_Handler       /* 9: TIMER1 */
+    .long   Default_Handler       /* 10: TIMER2 */
+    .long   Default_Handler       /* 11: RTC0 */
+    .long   Default_Handler       /* 12: TEMP */
+    .long   Default_Handler       /* 13: RNG */
+    .long   Default_Handler       /* 14: ECB */
+    .long   Default_Handler       /* 15: CCM_AAR */
+    .long   Default_Handler       /* 16: WDT */
+    .long   Default_Handler       /* 17: RTC1 */
+    .long   Default_Handler       /* 18: QDEC */
+    .long   Default_Handler       /* 19: COMP_LPCOMP */
+    .long   Default_Handler       /* 20: SWI0_EGU0 */
+    .long   Default_Handler       /* 21: SWI1_EGU1 */
+    .long   SWI2_EGU2_IRQHandler  /* 22: SWI2_EGU2 (SoftDevice Event) */
+    .rept   25                    /* 23 to 47: remaining IRQs */
     .long   Default_Handler
     .endr
 
@@ -81,6 +106,9 @@ Reset_Handler:
     b    Default_Handler
 
 /* ─── Default / Fault Handler ───────────────────────────── */
+    .weak   SWI2_EGU2_IRQHandler
+    .set    SWI2_EGU2_IRQHandler, Default_Handler
+
     .globl Default_Handler
     .type Default_Handler, %function
 Default_Handler:

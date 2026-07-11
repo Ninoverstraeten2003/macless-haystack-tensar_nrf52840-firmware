@@ -10,7 +10,6 @@
 
 #define LEDS_LIST { LED_1 }
 
-#define LEDS_MASK      (1 << LED_1)  // Bitmask for all LEDs
 #define LEDS_INV_MASK  LEDS_MASK     // Invert all LEDs because they are active-low
 
 #define BSP_LED_0      LED_1

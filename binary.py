@@ -18,10 +18,13 @@ import sys
 # Always override this with your real key:
 #   python3 binary.py <your-base64-key>
 #   BASE64_KEY=<your-base64-key> make
-DEFAULT_KEY = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"  # 28 × 0x00
+DEFAULT_KEY = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="  # 28 × 0x00
 
 b64_str = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("BASE64_KEY", DEFAULT_KEY)
 raw_bytes = base64.b64decode(b64_str)
+
+if len(raw_bytes) != 28:
+    sys.exit(f"Error: Decoded public key must be exactly 28 bytes (got {len(raw_bytes)} bytes).")
 
 # ── Emit header ───────────────────────────────────────────────────────────────
 hex_values = ", ".join(f"0x{b:02x}" for b in raw_bytes)
